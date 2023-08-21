@@ -11,8 +11,12 @@
 
 ;::btw::by the way
 ;::های::{U+200C}های
+::اینصورت::این صورت
+::بصورت::به صورت
+::گزارشات::گزارش‌ها
 
 ^!g::{
     Send "^c"
+    Sleep 150
     Run("https://www.google.com/search?q=" A_Clipboard)
     }
