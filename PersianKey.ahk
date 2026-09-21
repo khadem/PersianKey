@@ -15,15 +15,17 @@ A_TrayMenu.Add("Exit", MenuHandler)  ; Creates a new menu item.
 Persistent
 
 MenuHandler(ItemName, ItemPos, MyMenu) {
-	if (ItemName = "Exit"){
-		ExitApp
-	}
-    MsgBox "Persian Key version 1.3 - [Farvardin 1404] `nby: mostafa.khadem@live.com"
+    if (ItemName = "Exit") {
+        ExitApp
+    }
+    MsgBox "Persian Key version 1.3 - [Farvardin 1404] `nby: mostafa.khadem@live.com`n`nShift+Space: Nim fasele (zwnj)`nWin+Space: Search on web`nCtrl+Space: refine persian characters"
 }
 
-+Space::{
-    InputLocaleID := DllCall("GetKeyboardLayout", "UInt", ThreadID := DllCall("GetWindowThreadProcessId", "UInt", WinExist("A"), "UInt", 0), "UInt")
-    if( InputLocaleID = 69796905){
+; Shift + space: ZERO WIDTH NON-JOINER (zwnj)
++Space:: {
+    InputLocaleID := DllCall("GetKeyboardLayout", "UInt", ThreadID := DllCall("GetWindowThreadProcessId", "UInt",
+        WinExist("A"), "UInt", 0), "UInt")
+    if (InputLocaleID = 69796905) {
         Send "{U+200C}"
     }
 }
@@ -257,28 +259,35 @@ MenuHandler(ItemName, ItemPos, MyMenu) {
 ::اسفندماه::اسفند ماه
 
 ;-------------------------------------------------------------------------------
-;  Google Search - Ctrl + Alt + g
+;  Google Search - Win + Space
+;  Google Search - Ctrl + Alt + g: will be retired soon!
 ;-------------------------------------------------------------------------------
-^!g::{
+#Space::
+^!g:: {
     Send "^c"
     Sleep 150
     Run("https://www.google.com/search?q=" A_Clipboard)
-    }
+}
 
-^!r::{
+;-------------------------------------------------------------------------------
+;  Persian text refinement - Ctrl + Space
+;  Persian text refinement - Ctrl + Alt + r: will be retired soon!
+;-------------------------------------------------------------------------------
+^Space::
+^!r:: {
     Send "^c"
-	if (StrLen(A_Clipboard)>0) {
-		Sleep 150
-		A_Clipboard := StrReplace(A_Clipboard, "ي", "ی")
-		A_Clipboard := StrReplace(A_Clipboard, "ك", "ک")
-		;A_Clipboard := StrReplace(A_Clipboard, "1", "۱")
-		;۰۱۲۳۴۵۶۷۸۹
-		;٠١٢٣٤٥٦٧٨٩ 
-		;0123456789
-		Send "^v"
-	}
+    if (StrLen(A_Clipboard) > 0) {
+        Sleep 150
+        A_Clipboard := StrReplace(A_Clipboard, "ي", "ی")
+        A_Clipboard := StrReplace(A_Clipboard, "ك", "ک")
+        A_Clipboard := StrReplace(A_Clipboard, "ة", "ه")
+        ;A_Clipboard := StrReplace(A_Clipboard, "1", "۱")
+        ;۰۱۲۳۴۵۶۷۸۹
+        ;٠١٢٣٤٥٦٧٨٩
+        ;0123456789
+        Send "^v"
     }
-
+}
 
 ;if FileExist("correction.txt")
 ;    MsgBox, "correction file is here!"
