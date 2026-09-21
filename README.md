@@ -128,6 +128,7 @@ An AutoHotKey script to add Semi-Space (zwnj...).
 * Double click persiankey.ahk
 * Use SHIFT+SPACE when persian keyboard layout is active and
 * Select text anywhere and press `Ctrl` + `Alt` + G to open in Google search
+* Use `Win+R` and `shell:common startup` command to add app to startup 
 
 # Version History
 v1.3 Add more verbs and arabic letter replacement
