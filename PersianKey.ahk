@@ -18,7 +18,7 @@ MenuHandler(ItemName, ItemPos, MyMenu) {
     if (ItemName = "Exit") {
         ExitApp
     }
-    MsgBox "Persian Key version 1.3 - [Farvardin 1404] `nby: mostafa.khadem@live.com`n`nShift+Space: Nim fasele (zwnj)`nWin+Space: Search on web`nCtrl+Space: refine persian characters"
+    MsgBox "Persian Key version 1.3 - [Farvardin 1404] `nby: mostafa.khadem@live.com`n`nShift+Space: Nim fasele (zwnj)`nWin+Space: Search on web`nCtrl+Win+Space: Dictionary lookup`nCtrl+Space: refine persian characters"
 }
 
 ; Shift + space: ZERO WIDTH NON-JOINER (zwnj)
@@ -289,5 +289,115 @@ MenuHandler(ItemName, ItemPos, MyMenu) {
     }
 }
 
-;if FileExist("correction.txt")
-;    MsgBox, "correction file is here!"
+
+;-------------------------------------------------------------------------------
+; Dictionary - Ctrl + Win + Space
+;-------------------------------------------------------------------------------
+^#Space:: {
+    ; 1. ذخیره و خالی کردن موقت کلیپ‌بورد
+    ClipSaved := ClipboardAll()
+    A_Clipboard := ""
+
+    ; 2. کپی کردن متن انتخاب شده
+    Send("^c")
+    if !ClipWait(1.5) {
+        A_Clipboard := ClipSaved
+        return
+    }
+
+    selectedText := Trim(A_Clipboard)
+    A_Clipboard := ClipSaved ; بازگرداندن کلیپ‌بورد
+
+    if (selectedText = "")
+        return
+
+    ; 3. تشخیص هوشمند زبان (اگر فارسی بود -> انگلیسی، در غیر این صورت -> فارسی)
+    targetLang := "fa" 
+    if IsPersianText(selectedText) {
+        targetLang := "en" 
+    }
+
+    ; 4. تبدیل متن به فرمت URL
+    encodedText := UrlEncode(selectedText)
+
+    ; 5. ارسال درخواست به سرور ترجمه گوگل
+    url := "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" targetLang "&dt=t&q=" encodedText
+
+    try {
+        whr := ComObject("WinHttp.WinHttpRequest.5.1")
+        whr.Open("GET", url, false)
+        whr.SetRequestHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+        whr.Send()
+
+        if (whr.Status = 200) {
+            response := whr.ResponseText
+            ; 6. استخراج متن ترجمه شده از پاسخ JSON
+            if RegExMatch(response, '^\[\[\["(.*?)(?<!\\)"', &match) {
+                translatedText := match[1]
+                ; تمیزکاری کاراکترهای خاص
+                translatedText := StrReplace(translatedText, '\"', '"')
+                translatedText := StrReplace(translatedText, '\\', '\')
+                translatedText := StrReplace(translatedText, '\n', '`n')
+
+                ShowNotification(translatedText)
+            } else {
+                ShowNotification("ترجمه‌ای یافت نشد.")
+            }
+        } else {
+            ShowNotification("خطا در ارتباط با سرور ترجمه.")
+        }
+    } catch as e {
+        ShowNotification("خطا: " e.Message)
+    }
+}
+
+; تابع تشخیص متن فارسی/عربی
+IsPersianText(text) {
+    ; بررسی وجود حروف فارسی/عربی (محدوده یونی‌کد عربی)
+    ; \x{0600} تا \x{06FF} شامل حروف عربی و فارسی است
+    ; \x{0750} تا \x{077F} شامل حروف اضافی فارسی است
+    if RegExMatch(text, "[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{FB50}-\x{FDFF}\x{FE70}-\x{FEFF}]")
+        return true
+    return false
+}
+
+; تابع تبدیل متن به URL Encode (پشتیبانی کامل از یونی‌کد و فارسی)
+UrlEncode(str) {
+    buff := Buffer(StrPut(str, "UTF-8"))
+    StrPut(str, buff, "UTF-8")
+    res := ""
+    Loop buff.Size {
+        byte := NumGet(buff, A_Index - 1, "UChar")
+        if (byte >= 48 && byte <= 57) || (byte >= 65 && byte <= 90) || (byte >= 97 && byte <= 122) || (byte = 45 || byte = 46 || byte = 95 || byte = 126)
+            res .= Chr(byte)
+        else
+            res .= "%" . Format("{:02X}", byte)
+    }
+    return res
+}
+
+; تابع نمایش نوتیفیکیشن زیبا در پایین صفحه
+ShowNotification(text) {
+    static oGui := ""
+    if IsObject(oGui) {
+        oGui.Destroy()
+    }
+
+    oGui := Gui("+AlwaysOnTop -Caption +ToolWindow +Border +LastFound")
+    oGui.BackColor := "2b2b2b" ; رنگ پس‌زمینه تیره
+    oGui.SetFont("s14 cWhite q5", "Segoe UI")
+    oGui.MarginX := 20
+    oGui.MarginY := 15
+
+    oGui.Add("Text", "w500 Center", text)
+
+    ; محاسبه مختصات برای نمایش در پایین وسط مانیتور اصلی
+    MonitorGet(1, &Left, &Top, &Right, &Bottom)
+    X := Left + (Right - Left) / 2
+    Y := Bottom - 150
+
+    oGui.Show("NoActivate NA x" X " y" Y " AutoSize")
+
+    ; محو شدن خودکار پس از 6 ثانیه
+    SetTimer(() => oGui.Destroy(), -6000)
+}
