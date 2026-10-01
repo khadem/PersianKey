@@ -1,3 +1,5 @@
+#Requires AutoHotkey v2.0
+
 RunWait '"C:\Program Files\AutoHotkey\Compiler\Ahk2Exe.exe"'
   . ' /in "D:\dev\PersianKey\PersianKey.ahk"'
   . ' /icon "D:\dev\PersianKey\persiankey.ico"'
