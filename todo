@@ -7,4 +7,5 @@
 - [ ] Test input behavior across supported devices and applications.
 - [ ] Document setup, usage, and known limitations.
 - [ ] Redesing shortcuts (Ctrl+Shift+D,G,R,Q,X,C,V).
-- [ ] Add setting page.
+- [x] Add setting page.
+- [ ] Add excluded programs list on setting page.

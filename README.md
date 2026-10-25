@@ -156,6 +156,10 @@ src/          AutoHotkey application source
 
 The script currently resides at `src/PersianKey.ahk`. The build script at `scripts/compile.ahk` uses the AutoHotkey v2 installation that runs it and writes the compiled executable to `release/PersianKey.exe`.
 
+## Settings
+
+Choose **Settings** from the PersianKey system-tray menu to enable or disable zero-width non-joiner insertion, automatic corrections, web search, selected-text refinement, and dictionary translation. Changes take effect immediately and are saved per Windows user in `%AppData%\PersianKey\settings.ini`; all features are enabled by default.
+
 # Setup
 * Download and install [AutoHotkey v2](https://www.autohotkey.com/)
 * Clone or download this repository.

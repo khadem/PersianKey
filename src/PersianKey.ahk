@@ -9,10 +9,86 @@
 ; todo add verbs negetive form
 
 A_TrayMenu.Delete()  ; Delete the standard items.
+A_TrayMenu.Add("Settings", OpenSettings)
 A_TrayMenu.Add("About PersianKey", MenuHandler)  ; Creates a new menu item.
 A_TrayMenu.Add()  ; Creates a separator line.
 A_TrayMenu.Add("Exit", MenuHandler)  ; Creates a new menu item.
 Persistent
+
+settingsDirectory := A_AppData "\PersianKey"
+SettingsFile := settingsDirectory "\settings.ini"
+DirCreate settingsDirectory
+
+EnableZwnj := IniRead(SettingsFile, "Features", "Zwnj", 1) = "1"
+EnableAutoCorrection := IniRead(SettingsFile, "Features", "AutoCorrection", 1) = "1"
+EnableWebSearch := IniRead(SettingsFile, "Features", "WebSearch", 1) = "1"
+EnableTextRefinement := IniRead(SettingsFile, "Features", "TextRefinement", 1) = "1"
+EnableDictionary := IniRead(SettingsFile, "Features", "Dictionary", 1) = "1"
+SettingsGui := 0
+ZwnjCheckbox := 0
+AutoCorrectionCheckbox := 0
+WebSearchCheckbox := 0
+TextRefinementCheckbox := 0
+DictionaryCheckbox := 0
+
+OpenSettings(*) {
+    global SettingsGui, EnableZwnj, EnableAutoCorrection, EnableWebSearch
+    global EnableTextRefinement, EnableDictionary
+    global ZwnjCheckbox, AutoCorrectionCheckbox, WebSearchCheckbox
+    global TextRefinementCheckbox, DictionaryCheckbox
+
+    if IsObject(SettingsGui) {
+        SettingsGui.Show()
+        return
+    }
+
+    SettingsGui := Gui(, "PersianKey Settings")
+    SettingsGui.SetFont("s10", "Segoe UI")
+    SettingsGui.Add("Text", "w430", "قابلیت‌های فعال:")
+
+    ZwnjCheckbox := SettingsGui.Add("Checkbox", "w430", "درج نیم‌فاصله (Shift + Space)")
+    ZwnjCheckbox.Value := EnableZwnj
+    AutoCorrectionCheckbox := SettingsGui.Add("Checkbox", "w430", "اصلاح خودکار واژه‌ها و فاصله‌گذاری")
+    AutoCorrectionCheckbox.Value := EnableAutoCorrection
+    WebSearchCheckbox := SettingsGui.Add("Checkbox", "w430", "جست‌وجوی متن انتخاب‌شده (Win + Space)")
+    WebSearchCheckbox.Value := EnableWebSearch
+    TextRefinementCheckbox := SettingsGui.Add("Checkbox", "w430", "اصلاح حروف عربی در متن انتخاب‌شده (Ctrl + Space)")
+    TextRefinementCheckbox.Value := EnableTextRefinement
+    DictionaryCheckbox := SettingsGui.Add("Checkbox", "w430", "ترجمهٔ متن انتخاب‌شده (Ctrl + Win + Space)")
+    DictionaryCheckbox.Value := EnableDictionary
+
+    SettingsGui.Add("Text", "w430", "تغییرات بلافاصله ذخیره می‌شوند.")
+    for checkbox in [ZwnjCheckbox, AutoCorrectionCheckbox, WebSearchCheckbox, TextRefinementCheckbox, DictionaryCheckbox]
+        checkbox.OnEvent("Click", SaveSettings)
+
+    SettingsGui.OnEvent("Close", CloseSettings)
+    SettingsGui.OnEvent("Escape", CloseSettings)
+    SettingsGui.Show("AutoSize")
+}
+
+SaveSettings(*) {
+    global SettingsFile, EnableZwnj, EnableAutoCorrection, EnableWebSearch
+    global EnableTextRefinement, EnableDictionary
+    global ZwnjCheckbox, AutoCorrectionCheckbox, WebSearchCheckbox
+    global TextRefinementCheckbox, DictionaryCheckbox
+
+    EnableZwnj := ZwnjCheckbox.Value = 1
+    EnableAutoCorrection := AutoCorrectionCheckbox.Value = 1
+    EnableWebSearch := WebSearchCheckbox.Value = 1
+    EnableTextRefinement := TextRefinementCheckbox.Value = 1
+    EnableDictionary := DictionaryCheckbox.Value = 1
+
+    IniWrite(EnableZwnj ? 1 : 0, SettingsFile, "Features", "Zwnj")
+    IniWrite(EnableAutoCorrection ? 1 : 0, SettingsFile, "Features", "AutoCorrection")
+    IniWrite(EnableWebSearch ? 1 : 0, SettingsFile, "Features", "WebSearch")
+    IniWrite(EnableTextRefinement ? 1 : 0, SettingsFile, "Features", "TextRefinement")
+    IniWrite(EnableDictionary ? 1 : 0, SettingsFile, "Features", "Dictionary")
+}
+
+CloseSettings(*) {
+    global SettingsGui
+    SettingsGui := 0
+}
 
 MenuHandler(ItemName, ItemPos, MyMenu) {
     if (ItemName = "Exit") {
@@ -22,6 +98,7 @@ MenuHandler(ItemName, ItemPos, MyMenu) {
 }
 
 ; Shift + space: ZERO WIDTH NON-JOINER (zwnj)
+#HotIf EnableZwnj
 +Space:: {
     InputLocaleID := DllCall("GetKeyboardLayout", "UInt", ThreadID := DllCall("GetWindowThreadProcessId", "UInt",
         WinExist("A"), "UInt", 0), "UInt")
@@ -29,12 +106,14 @@ MenuHandler(ItemName, ItemPos, MyMenu) {
         Send "{U+200C}"
     }
 }
+#HotIf
 
 ;------------------------------------------------------------------------------
 ; Common Misspellings - the main list
 ;------------------------------------------------------------------------------
 ;::btw::by the way
 ;::های::{U+200C}های
+#HotIf EnableAutoCorrection
 ::اینصورت::این صورت
 ::بصورت::به صورت
 ::گزارشات::گزارش‌ها
@@ -257,22 +336,26 @@ MenuHandler(ItemName, ItemPos, MyMenu) {
 ::دیماه::دی ماه
 ::بهمنماه::بهمن ماه
 ::اسفندماه::اسفند ماه
+#HotIf
 
 ;-------------------------------------------------------------------------------
 ;  Google Search - Win + Space
 ;  Google Search - Ctrl + Alt + g: will be retired soon!
 ;-------------------------------------------------------------------------------
+#HotIf EnableWebSearch
 #Space::
 ^!g:: {
     Send "^c"
     Sleep 150
     Run("https://www.google.com/search?q=" A_Clipboard)
 }
+#HotIf
 
 ;-------------------------------------------------------------------------------
 ;  Persian text refinement - Ctrl + Space
 ;  Persian text refinement - Ctrl + Alt + r: will be retired soon!
 ;-------------------------------------------------------------------------------
+#HotIf EnableTextRefinement
 ^Space::
 ^!r:: {
     Send "^c"
@@ -288,11 +371,13 @@ MenuHandler(ItemName, ItemPos, MyMenu) {
         Send "^v"
     }
 }
+#HotIf
 
 
 ;-------------------------------------------------------------------------------
 ; Dictionary - Ctrl + Win + Space
 ;-------------------------------------------------------------------------------
+#HotIf EnableDictionary
 ^#Space:: {
     ; 1. ذخیره و خالی کردن موقت کلیپ‌بورد
     ClipSaved := ClipboardAll()
@@ -350,6 +435,7 @@ MenuHandler(ItemName, ItemPos, MyMenu) {
         ShowNotification("خطا: " e.Message)
     }
 }
+#HotIf
 
 ; تابع تشخیص متن فارسی/عربی
 IsPersianText(text) {
