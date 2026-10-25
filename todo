@@ -1,0 +1,10 @@
+- [x] Define the project goals and target platforms for PersianKey.
+- [x] Choose the framework and establish the project structure.
+- [ ] Implement the Persian keyboard layout and key mappings.
+- [ ] Support switching between Persian and English input.
+- [ ] Handle Persian characters, punctuation, and numerals.
+- [ ] Add configurable keyboard settings and preferences.
+- [ ] Test input behavior across supported devices and applications.
+- [ ] Document setup, usage, and known limitations.
+- [ ] Redesing shortcuts (Ctrl+Shift+D,G,R,Q,X,C,V).
+- [ ] Add setting page.

@@ -38,6 +38,17 @@
 <h2>🎯 هدف پروژه</h2>
 <p>هدف این پروژه ارائه یک ابزار ساده و کم‌حجم برای <strong>بهبود و استانداردسازی تایپ فارسی</strong> است؛ به‌گونه‌ای که کاربر بتواند بدون نیاز به اصلاح دستی مکرر، متون فارسی را سریع‌تر و صحیح‌تر تایپ کند.</p>
 <p>تمرکز اصلی پروژه بر <strong>اصلاح متن در زمان تایپ</strong> است؛ بنابراین بسیاری از خطاهای رایج پیش از آنکه به بخشی از متن تبدیل شوند، اصلاح خواهند شد.</p>
+<h3>اهداف اصلی</h3>
+<ul>
+<li>درج سریع نیم‌فاصله با <code>Shift + Space</code> هنگام فعال بودن صفحه‌کلید فارسی</li>
+<li>اصلاح خودکار برخی ترکیب‌ها و پیشوندهای رایج فارسی هنگام تایپ</li>
+<li>تبدیل حروف عربی به معادل فارسی در متن انتخاب‌شده</li>
+<li>فراهم کردن میان‌برهایی برای جست‌وجوی وب و ترجمهٔ متن انتخاب‌شده</li>
+<li>ارائهٔ ابزاری سبک و در دسترس در برنامه‌های ویندوزی، بدون جایگزین شدن با صفحه‌کلید یا ویرایشگر متن</li>
+</ul>
+<h3>پلتفرم‌های هدف</h3>
+<p>PersianKey در حال حاضر برای <strong>رایانه‌های رومیزی ویندوز</strong> و با <strong>AutoHotkey v2</strong> طراحی شده است. قابلیت نیم‌فاصله به فعال بودن صفحه‌کلید فارسی وابسته است؛ برخی قابلیت‌های مبتنی بر متن انتخاب‌شده نیز به پشتیبانی برنامهٔ مورد استفاده از میان‌برهای صفحه‌کلید و کلیپ‌بورد وابسته‌اند.</p>
+<p>این پروژه در وضعیت فعلی صفحه‌کلید مستقل یا ورودی‌متد (IME) نیست و پشتیبانی بومی از macOS، Linux، Android یا iOS ندارد.</p>
 <h2>👥 مناسب برای</h2>
 <p>این ابزار می‌تواند برای طیف گسترده‌ای از کاربران فارسی‌زبان مفید باشد:</p>
 <ul>
@@ -88,15 +99,27 @@
 <li>Google search: Searching selected text by simple shorcut (Ctrl + Alt + g)</li>
 <li>Refine text: Replace arabic letters on selected text (Ctrl + Alt + r)</li>
 </ul>
+<h2>Goals and target platform</h2>
+<p>PersianKey aims to make Persian writing more consistent with a lightweight Windows utility: it inserts the zero-width non-joiner, corrects common Persian typing patterns, refines selected Arabic characters to Persian equivalents, and provides shortcuts for working with selected text. It complements the user's keyboard and text editor rather than replacing either.</p>
+<p>The current target is <strong>Windows desktop with AutoHotkey v2</strong>. Inserting a zero-width non-joiner requires the Persian keyboard layout to be active. Selected-text features depend on the host application supporting the relevant keyboard shortcuts and clipboard operations. PersianKey is not currently a standalone keyboard or IME, and macOS, Linux, Android, and iOS are not supported.</p>
 <h1>Setup</h1>
 <ul>
-<li>Download and install <a href="https://www.autohotkey.com/">AutoHotKey</a></li>
-<li>Clone/download this repo and extract persiankey.ahk</li>
-<li>Double click persiankey.ahk</li>
+<li>Download and install <a href="https://www.autohotkey.com/">AutoHotkey v2</a></li>
+<li>Clone or download this repository.</li>
+<li>Run <code>src\PersianKey.ahk</code> with AutoHotkey v2.</li>
 <li>Use SHIFT+SPACE when persian keyboard layout is active and</li>
 <li>Select text anywhere and press <code>Ctrl</code> + <code>Alt</code> + G to open in Google search</li>
 <li>Use <code>Win+R</code> and <code>shell:common startup</code> command to add app to startup</li>
 </ul>
+<p>To build the executable, run <code>scripts\compile.ahk</code> with AutoHotkey v2. The AutoHotkey installation must include Ahk2Exe.</p>
+<h2>Framework and project structure</h2>
+<p>PersianKey uses <strong>AutoHotkey v2</strong> as its Windows desktop automation framework. Its keyboard hooks, hotkeys, and Windows API integration make this the smallest compatible choice.</p>
+<pre><code>assets/       Application icon
+docs/         Published project documentation
+release/      Compiled release executables
+scripts/      Build scripts
+src/          AutoHotkey application source</code></pre>
+<p>The application source is at <code>src\PersianKey.ahk</code>. The build script at <code>scripts\compile.ahk</code> uses the AutoHotkey v2 installation that runs it and writes the compiled executable to <code>release\PersianKey.exe</code>.</p>
 <h1>Version History</h1>
 <p>v1.3 Add more verbs and arabic letter replacement<br>
 v1.2 Add some verbs perfix correction<br>
