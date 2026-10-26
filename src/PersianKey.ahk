@@ -1,4 +1,4 @@
-﻿;PesianKey v1.3
+﻿;PesianKey
 ;------------------------------------------------------------------------------
 ; Settings
 ;------------------------------------------------------------------------------
@@ -6,7 +6,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance force
 
-AppVersion := "1.3.0"
+AppVersion := "1.4.0"
 RepositoryUrl := "https://github.com/khadem/PersianKey"
 LatestReleaseApiUrl := "https://api.github.com/repos/khadem/PersianKey/releases/latest"
 
