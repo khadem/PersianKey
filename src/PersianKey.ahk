@@ -6,10 +6,15 @@
 #Requires AutoHotkey v2.0
 #SingleInstance force
 
+AppVersion := "1.3.0"
+RepositoryUrl := "https://github.com/khadem/PersianKey"
+LatestReleaseApiUrl := "https://api.github.com/repos/khadem/PersianKey/releases/latest"
+
 ; todo add verbs negetive form
 
 A_TrayMenu.Delete()  ; Delete the standard items.
 A_TrayMenu.Add("Settings", OpenSettings)
+A_TrayMenu.Add("Check for updates", MenuHandler)
 A_TrayMenu.Add("About PersianKey", MenuHandler)  ; Creates a new menu item.
 A_TrayMenu.Add()  ; Creates a separator line.
 A_TrayMenu.Add("Exit", MenuHandler)  ; Creates a new menu item.
@@ -44,20 +49,20 @@ OpenSettings(*) {
 
     SettingsGui := Gui(, "PersianKey Settings")
     SettingsGui.SetFont("s10", "Segoe UI")
-    SettingsGui.Add("Text", "w430", "قابلیت‌های فعال:")
+    SettingsGui.Add("Text", "w430", "Enabled features:")
 
-    ZwnjCheckbox := SettingsGui.Add("Checkbox", "w430", "درج نیم‌فاصله (Shift + Space)")
+    ZwnjCheckbox := SettingsGui.Add("Checkbox", "w430", "Insert zero-width non-joiner (Shift + Space)")
     ZwnjCheckbox.Value := EnableZwnj
-    AutoCorrectionCheckbox := SettingsGui.Add("Checkbox", "w430", "اصلاح خودکار واژه‌ها و فاصله‌گذاری")
+    AutoCorrectionCheckbox := SettingsGui.Add("Checkbox", "w430", "Automatic word and spacing corrections")
     AutoCorrectionCheckbox.Value := EnableAutoCorrection
-    WebSearchCheckbox := SettingsGui.Add("Checkbox", "w430", "جست‌وجوی متن انتخاب‌شده (Win + Space)")
+    WebSearchCheckbox := SettingsGui.Add("Checkbox", "w430", "Search selected text (Win + Space)")
     WebSearchCheckbox.Value := EnableWebSearch
-    TextRefinementCheckbox := SettingsGui.Add("Checkbox", "w430", "اصلاح حروف عربی در متن انتخاب‌شده (Ctrl + Space)")
+    TextRefinementCheckbox := SettingsGui.Add("Checkbox", "w430", "Refine Arabic characters in selected text (Ctrl + Space)")
     TextRefinementCheckbox.Value := EnableTextRefinement
-    DictionaryCheckbox := SettingsGui.Add("Checkbox", "w430", "ترجمهٔ متن انتخاب‌شده (Ctrl + Win + Space)")
+    DictionaryCheckbox := SettingsGui.Add("Checkbox", "w430", "Translate selected text (Ctrl + Win + Space)")
     DictionaryCheckbox.Value := EnableDictionary
 
-    SettingsGui.Add("Text", "w430", "تغییرات بلافاصله ذخیره می‌شوند.")
+    SettingsGui.Add("Text", "w430", "Changes are saved immediately.")
     for checkbox in [ZwnjCheckbox, AutoCorrectionCheckbox, WebSearchCheckbox, TextRefinementCheckbox, DictionaryCheckbox]
         checkbox.OnEvent("Click", SaveSettings)
 
@@ -91,10 +96,86 @@ CloseSettings(*) {
 }
 
 MenuHandler(ItemName, ItemPos, MyMenu) {
+    if (ItemName = "Check for updates") {
+        CheckForUpdates()
+        return
+    }
     if (ItemName = "Exit") {
         ExitApp
     }
-    MsgBox "Persian Key version 1.3 - [Farvardin 1404] `nby: mostafa.khadem@live.com`n`nShift+Space: Nim fasele (zwnj)`nWin+Space: Search on web`nCtrl+Win+Space: Dictionary lookup`nCtrl+Space: refine persian characters"
+    global AppVersion
+    MsgBox "Persian Key version " AppVersion " - [Farvardin 1404] `nby: mostafa.khadem@live.com`n`nShift+Space: Nim fasele (zwnj)`nWin+Space: Search on web`nCtrl+Win+Space: Dictionary lookup`nCtrl+Space: refine persian characters"
+}
+
+CheckForUpdates(*) {
+    global AppVersion, LatestReleaseApiUrl, RepositoryUrl
+
+    try {
+        request := ComObject("WinHttp.WinHttpRequest.5.1")
+        request.SetTimeouts(5000, 5000, 10000, 10000)
+        request.Open("GET", LatestReleaseApiUrl, false)
+        request.SetRequestHeader("User-Agent", "PersianKey-Updater")
+        request.SetRequestHeader("Accept", "application/vnd.github+json")
+        request.Send()
+
+        if (request.Status = 404) {
+            if (MsgBox("No published releases are available yet. Open the PersianKey releases page?",
+                "PersianKey Updates", "YesNo Icon!") = "Yes")
+                Run(RepositoryUrl "/releases")
+            return
+        }
+        if (request.Status != 200)
+            throw Error("GitHub returned HTTP status " request.Status ".")
+
+        releaseInfo := request.ResponseText
+        if !RegExMatch(releaseInfo, '"tag_name"\s*:\s*"v?(\d+)\.(\d+)\.(\d+)"', &versionMatch)
+            throw Error("The latest release has a missing or unsupported version tag.")
+
+        latestVersion := versionMatch[1] "." versionMatch[2] "." versionMatch[3]
+        if CompareVersions(latestVersion, AppVersion) <= 0 {
+            MsgBox("PersianKey is up to date (version " AppVersion ").", "PersianKey Updates", "Iconi")
+            return
+        }
+
+        if !RegExMatch(releaseInfo,
+            '"name"\s*:\s*"PersianKey\.exe"[^{}]*"browser_download_url"\s*:\s*"([^"]+)"', &assetMatch)
+            throw Error("Release " latestVersion " does not include a PersianKey.exe asset.")
+
+        trustedAssetPrefix := RepositoryUrl "/releases/download/"
+        if (StrLower(SubStr(assetMatch[1], 1, StrLen(trustedAssetPrefix))) != StrLower(trustedAssetPrefix))
+            throw Error("The release executable is not hosted on the PersianKey GitHub releases page.")
+
+        downloadDirectory := A_AppData "\PersianKey\Updates"
+        DirCreate downloadDirectory
+        downloadPath := downloadDirectory "\PersianKey-" latestVersion ".exe"
+        Download(assetMatch[1], downloadPath)
+        downloadedFile := FileRead(downloadPath, "RAW")
+        if (downloadedFile.Size < 2 || NumGet(downloadedFile, 0, "UChar") != 0x4D
+            || NumGet(downloadedFile, 1, "UChar") != 0x5A) {
+            FileDelete downloadPath
+            throw Error("The downloaded file is not a valid Windows executable.")
+        }
+
+        if (MsgBox("Version " latestVersion " has been downloaded to:`n" downloadPath
+            . "`n`nRun the downloaded update now?", "PersianKey Updates", "YesNo Iconi") = "Yes")
+            Run('"' downloadPath '"')
+    } catch as error {
+        MsgBox("Could not check for or download updates:`n" error.Message, "PersianKey Updates", "Iconx")
+    }
+}
+
+CompareVersions(firstVersion, secondVersion) {
+    firstParts := StrSplit(firstVersion, ".")
+    secondParts := StrSplit(secondVersion, ".")
+    Loop 3 {
+        firstPart := Integer(firstParts[A_Index])
+        secondPart := Integer(secondParts[A_Index])
+        if (firstPart > secondPart)
+            return 1
+        if (firstPart < secondPart)
+            return -1
+    }
+    return 0
 }
 
 ; Shift + space: ZERO WIDTH NON-JOINER (zwnj)
