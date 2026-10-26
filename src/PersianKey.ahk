@@ -29,18 +29,30 @@ EnableAutoCorrection := IniRead(SettingsFile, "Features", "AutoCorrection", 1) =
 EnableWebSearch := IniRead(SettingsFile, "Features", "WebSearch", 1) = "1"
 EnableTextRefinement := IniRead(SettingsFile, "Features", "TextRefinement", 1) = "1"
 EnableDictionary := IniRead(SettingsFile, "Features", "Dictionary", 1) = "1"
+EnableStartup := IniRead(SettingsFile, "Startup", "Enabled", 0) = "1"
+StartupShortcutPath := A_Startup "\PersianKey.lnk"
 SettingsGui := 0
 ZwnjCheckbox := 0
 AutoCorrectionCheckbox := 0
 WebSearchCheckbox := 0
 TextRefinementCheckbox := 0
 DictionaryCheckbox := 0
+StartupCheckbox := 0
+
+if EnableStartup {
+    try {
+        ApplyStartupSetting(true)
+    } catch as startupError {
+        MsgBox("Could not add PersianKey to Windows startup:`n" startupError.Message,
+            "PersianKey Startup", "Iconx")
+    }
+}
 
 OpenSettings(*) {
     global SettingsGui, EnableZwnj, EnableAutoCorrection, EnableWebSearch
-    global EnableTextRefinement, EnableDictionary
+    global EnableTextRefinement, EnableDictionary, EnableStartup
     global ZwnjCheckbox, AutoCorrectionCheckbox, WebSearchCheckbox
-    global TextRefinementCheckbox, DictionaryCheckbox
+    global TextRefinementCheckbox, DictionaryCheckbox, StartupCheckbox
 
     if IsObject(SettingsGui) {
         SettingsGui.Show()
@@ -61,9 +73,12 @@ OpenSettings(*) {
     TextRefinementCheckbox.Value := EnableTextRefinement
     DictionaryCheckbox := SettingsGui.Add("Checkbox", "w430", "Translate selected text (Ctrl + Win + Space)")
     DictionaryCheckbox.Value := EnableDictionary
+    StartupCheckbox := SettingsGui.Add("Checkbox", "w430", "Start PersianKey when I sign in to Windows")
+    StartupCheckbox.Value := EnableStartup
 
     SettingsGui.Add("Text", "w430", "Changes are saved immediately.")
-    for checkbox in [ZwnjCheckbox, AutoCorrectionCheckbox, WebSearchCheckbox, TextRefinementCheckbox, DictionaryCheckbox]
+    for checkbox in [ZwnjCheckbox, AutoCorrectionCheckbox, WebSearchCheckbox, TextRefinementCheckbox,
+        DictionaryCheckbox, StartupCheckbox]
         checkbox.OnEvent("Click", SaveSettings)
 
     SettingsGui.OnEvent("Close", CloseSettings)
@@ -73,9 +88,23 @@ OpenSettings(*) {
 
 SaveSettings(*) {
     global SettingsFile, EnableZwnj, EnableAutoCorrection, EnableWebSearch
-    global EnableTextRefinement, EnableDictionary
+    global EnableTextRefinement, EnableDictionary, EnableStartup
     global ZwnjCheckbox, AutoCorrectionCheckbox, WebSearchCheckbox
-    global TextRefinementCheckbox, DictionaryCheckbox
+    global TextRefinementCheckbox, DictionaryCheckbox, StartupCheckbox
+
+    requestedStartup := StartupCheckbox.Value = 1
+    if (requestedStartup != EnableStartup) {
+        try {
+            ApplyStartupSetting(requestedStartup)
+        } catch as startupError {
+            StartupCheckbox.Value := EnableStartup
+            MsgBox("Could not update the Windows startup setting:`n" startupError.Message,
+                "PersianKey Startup", "Iconx")
+            return
+        }
+        EnableStartup := requestedStartup
+        IniWrite(EnableStartup ? 1 : 0, SettingsFile, "Startup", "Enabled")
+    }
 
     EnableZwnj := ZwnjCheckbox.Value = 1
     EnableAutoCorrection := AutoCorrectionCheckbox.Value = 1
@@ -88,6 +117,32 @@ SaveSettings(*) {
     IniWrite(EnableWebSearch ? 1 : 0, SettingsFile, "Features", "WebSearch")
     IniWrite(EnableTextRefinement ? 1 : 0, SettingsFile, "Features", "TextRefinement")
     IniWrite(EnableDictionary ? 1 : 0, SettingsFile, "Features", "Dictionary")
+}
+
+ApplyStartupSetting(enabled) {
+    global StartupShortcutPath
+
+    if !enabled {
+        if FileExist(StartupShortcutPath)
+            FileDelete StartupShortcutPath
+        return
+    }
+
+    if A_IsCompiled {
+        targetPath := A_ScriptFullPath
+        arguments := ""
+    } else {
+        targetPath := A_AhkPath
+        arguments := '"' A_ScriptFullPath '"'
+    }
+
+    shell := ComObject("WScript.Shell")
+    shortcut := shell.CreateShortcut(StartupShortcutPath)
+    shortcut.TargetPath := targetPath
+    shortcut.Arguments := arguments
+    shortcut.WorkingDirectory := A_ScriptDir
+    shortcut.Description := "Start PersianKey with Windows"
+    shortcut.Save()
 }
 
 CloseSettings(*) {
@@ -159,8 +214,8 @@ CheckForUpdates(*) {
         if (MsgBox("Version " latestVersion " has been downloaded to:`n" downloadPath
             . "`n`nRun the downloaded update now?", "PersianKey Updates", "YesNo Iconi") = "Yes")
             Run('"' downloadPath '"')
-    } catch as error {
-        MsgBox("Could not check for or download updates:`n" error.Message, "PersianKey Updates", "Iconx")
+    } catch as updateError {
+        MsgBox("Could not check for or download updates:`n" updateError.Message, "PersianKey Updates", "Iconx")
     }
 }
 

@@ -158,7 +158,7 @@ The script currently resides at `src/PersianKey.ahk`. The build script at `scrip
 
 ## Settings
 
-Choose **Settings** from the PersianKey system-tray menu to enable or disable zero-width non-joiner insertion, automatic corrections, web search, selected-text refinement, and dictionary translation. Changes take effect immediately and are saved per Windows user in `%AppData%\PersianKey\settings.ini`; all features are enabled by default.
+Choose **Settings** from the PersianKey system-tray menu to enable or disable zero-width non-joiner insertion, automatic corrections, web search, selected-text refinement, dictionary translation, and starting PersianKey when you sign in to Windows. Changes take effect immediately; feature settings are saved per Windows user in `%AppData%\PersianKey\settings.ini`. Startup is off by default and uses a shortcut in the current user's Startup folder.
 
 ## Updates
 
